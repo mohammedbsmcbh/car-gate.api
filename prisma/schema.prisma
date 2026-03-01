@@ -1,6 +1,3 @@
-// Car Gate - Automotive Marketplace Database Schema
-// PostgreSQL with Prisma ORM
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,9 +7,625 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
-// ENUMS
-// ============================================
+model Package {
+  id             String             @id @default(uuid())
+  nameEn         String             @unique
+  nameAr         String             @unique
+  descriptionEn  String?
+  descriptionAr  String?
+  price          Decimal            @db.Decimal(10, 2)
+  billingType    PackageBillingType
+  features       Json
+  isActive       Boolean            @default(true)
+  sortOrder      Int                @default(0)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  descriptionUr  String?
+  nameUr         String?
+  targetAudience PackageTarget      @default(ALL)
+  subscriptions  Subscription[]
+  transactions   Transaction[]
+
+  @@index([isActive])
+}
+
+model Subscription {
+  id                   String             @id @default(uuid())
+  userId               String
+  packageId            String
+  startDate            DateTime           @default(now())
+  endDate              DateTime
+  status               SubscriptionStatus @default(ACTIVE)
+  listingsUsed         Int                @default(0)
+  storiesUsed          Int                @default(0)
+  limits               Json
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  featuredListingsUsed Int                @default(0)
+  package              Package            @relation(fields: [packageId], references: [id])
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transaction          Transaction?
+
+  @@index([userId])
+  @@index([status])
+  @@index([endDate])
+}
+
+model User {
+  id                String           @id @default(uuid())
+  email             String           @unique
+  password          String
+  role              UserRole
+  name              String?
+  phone             String?
+  whatsapp          String?
+  avatar            String?
+  coverImage        String?
+  pushToken         String?
+  isApproved        Boolean          @default(false)
+  isActive          Boolean          @default(true)
+  commercialRecord  String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  deletedAt         DateTime?
+  otp               String?
+  otpExpiresAt      DateTime?
+  status            ApprovalStatus   @default(PENDING)
+  preferredLanguage Language         @default(EN)
+  approvedBy        AdminApproval[]  @relation("ApprovalAdmin")
+  approvals         AdminApproval[]  @relation("ApprovalTarget")
+  agency            Agency?
+  auditLogs         AuditLog[]       @relation("AuditActor")
+  bookings          Booking[]        @relation("CustomerBookings")
+  complaints        Complaint[]      @relation("ComplaintAuthor")
+  complaintsAbout   Complaint[]      @relation("ComplaintTarget")
+  customsClearers   CustomsClearer[] @relation("CustomsClearerCreatedBy")
+  devices           Device[]
+  inquiriesReceived Inquiry[]        @relation("InquiryReceiver")
+  inquiriesSent     Inquiry[]        @relation("InquirySender")
+  sentMessages      InquiryMessage[]
+  likes             Like[]
+  listings          Listing[]
+  notifications     Notification[]
+  offers            Offer[]
+  serviceProvider   ServiceProvider?
+  serviceRequests   ServiceRequest[] @relation("CustomerServiceRequests")
+  showroom          Showroom?
+  stories           Story[]
+  subscriptions     Subscription[]
+  transactions      Transaction[]
+
+  @@index([email])
+  @@index([role])
+  @@index([isApproved])
+}
+
+model Agency {
+  id               String           @id @default(uuid())
+  userId           String           @unique
+  name             String
+  nameAr           String?
+  description      String?
+  descriptionAr    String?
+  commercialRecord String?
+  logo             String?
+  coverImage       String?
+  address          String?
+  city             String?
+  latitude         Float?
+  longitude        Float?
+  website          String?
+  isApproved       Boolean          @default(false)
+  isVerified       Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subAdmins        AgencySubAdmin[]
+  listings         Listing[]
+
+  @@index([isApproved])
+  @@index([city])
+}
+
+model AgencySubAdmin {
+  id        String   @id @default(uuid())
+  agencyId  String
+  email     String
+  name      String
+  password  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@unique([agencyId, email])
+}
+
+model Showroom {
+  id               String             @id @default(uuid())
+  userId           String             @unique
+  name             String
+  nameAr           String?
+  description      String?
+  descriptionAr    String?
+  commercialRecord String?
+  logo             String?
+  coverImage       String?
+  address          String?
+  city             String?
+  latitude         Float?
+  longitude        Float?
+  isApproved       Boolean            @default(false)
+  isVerified       Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  listings         Listing[]
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subAdmins        ShowroomSubAdmin[]
+
+  @@index([isApproved])
+  @@index([city])
+}
+
+model ShowroomSubAdmin {
+  id         String   @id @default(uuid())
+  showroomId String
+  email      String
+  name       String
+  password   String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  showroom   Showroom @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+
+  @@unique([showroomId, email])
+}
+
+model Listing {
+  id               String        @id @default(uuid())
+  type             ListingType
+  status           ListingStatus @default(PENDING)
+  title            String
+  titleAr          String?
+  description      String?
+  descriptionAr    String?
+  price            Decimal       @db.Decimal(12, 2)
+  currency         String        @default("BHD")
+  make             String?
+  model            String?
+  year             Int?
+  mileage          Int?
+  color            String?
+  condition        String?
+  transmission     String?
+  fuelType         String?
+  bodyType         String?
+  engineSize       String?
+  plateNumber      String?
+  plateCategory    String?
+  city             String?
+  address          String?
+  latitude         Float?
+  longitude        Float?
+  contactPhone     String?
+  contactWhatsapp  String?
+  contactEmail     String?
+  isFeatured       Boolean       @default(false)
+  featuredStartsAt DateTime?
+  featuredUntil    DateTime?
+  featuredPrice    Decimal?      @db.Decimal(10, 2)
+  featuredPriority Int           @default(0)
+  viewCount        Int           @default(0)
+  likesCount       Int           @default(0)
+  inquiryCount     Int           @default(0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  approvedAt       DateTime?
+  expiresAt        DateTime?
+  deletedAt        DateTime?
+  ownerId          String
+  agencyId         String?
+  showroomId       String?
+  inquiries        Inquiry[]
+  likes            Like[]
+  agency           Agency?       @relation(fields: [agencyId], references: [id])
+  owner            User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  showroom         Showroom?     @relation(fields: [showroomId], references: [id])
+  views            ListingView[]
+  media            Media[]
+  offers           Offer[]
+  transactions     Transaction[]
+
+  @@index([type])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([make, model])
+  @@index([price])
+  @@index([city])
+  @@index([createdAt])
+  @@index([viewCount])
+  @@index([likesCount])
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+}
+
+model ListingView {
+  id        String   @id @default(uuid())
+  listingId String
+  ip        String?
+  userId    String?
+  createdAt DateTime @default(now())
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([ip])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Offer {
+  id        String      @id @default(uuid())
+  amount    Decimal     @db.Decimal(12, 2)
+  status    OfferStatus @default(PENDING)
+  message   String?
+  userId    String
+  listingId String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  listing   Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([listingId])
+}
+
+model InspectionCenter {
+  id          String   @id @default(uuid())
+  name        String
+  nameAr      String?
+  description String?
+  address     String?
+  city        String?
+  phone       String?
+  latitude    Float?
+  longitude   Float?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PolishingCenter {
+  id          String   @id @default(uuid())
+  name        String
+  nameAr      String?
+  description String?
+  address     String?
+  city        String?
+  phone       String?
+  latitude    Float?
+  longitude   Float?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ServiceProvider {
+  id          String              @id @default(uuid())
+  userId      String              @unique
+  type        ServiceProviderType
+  name        String?
+  nameAr      String?
+  description String?
+  city        String?
+  address     String?
+  phone       String?
+  whatsapp    String?
+  logo        String?
+  latitude    Float?
+  longitude   Float?
+  isApproved  Boolean             @default(false)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  services    ServiceItem[]
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings    ServiceRequest[]
+
+  @@index([type])
+  @@index([isApproved])
+  @@index([city])
+}
+
+model ServiceItem {
+  id                String          @id @default(uuid())
+  serviceProviderId String
+  nameEn            String
+  nameAr            String?
+  description       String?
+  price             Decimal         @db.Decimal(10, 2)
+  duration          String?
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  status            ApprovalStatus  @default(PENDING)
+  bookings          Booking[]
+  serviceProvider   ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+
+  @@index([serviceProviderId])
+  @@index([status])
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  serviceItemId String
+  customerId    String?
+  customerName  String
+  customerPhone String
+  date          String
+  time          String?
+  notes         String?
+  status        BookingStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  customer      User?         @relation("CustomerBookings", fields: [customerId], references: [id])
+  serviceItem   ServiceItem   @relation(fields: [serviceItemId], references: [id], onDelete: Cascade)
+
+  @@index([serviceItemId])
+  @@index([customerId])
+}
+
+model ServiceRequest {
+  id                String               @id @default(uuid())
+  serviceProviderId String
+  customerId        String?
+  customerName      String
+  customerPhone     String
+  requestType       String
+  notes             String?
+  status            ServiceRequestStatus @default(PENDING)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  customer          User?                @relation("CustomerServiceRequests", fields: [customerId], references: [id])
+  serviceProvider   ServiceProvider      @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
+
+  @@index([serviceProviderId])
+  @@index([customerId])
+}
+
+model CustomsClearer {
+  id          String   @id @default(uuid())
+  createdById String
+  name        String
+  description String?
+  phone       String
+  whatsapp    String?
+  email       String?
+  city        String?
+  address     String?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   User     @relation("CustomsClearerCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([createdById])
+  @@index([isActive])
+}
+
+model Media {
+  id        String   @id @default(uuid())
+  listingId String
+  url       String
+  type      String
+  isPrimary Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+}
+
+model Inquiry {
+  id         String           @id @default(uuid())
+  listingId  String
+  senderId   String
+  receiverId String
+  subject    String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  listing    Listing          @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  receiver   User             @relation("InquiryReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User             @relation("InquirySender", fields: [senderId], references: [id], onDelete: Cascade)
+  messages   InquiryMessage[]
+
+  @@index([listingId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+model InquiryMessage {
+  id        String   @id @default(uuid())
+  inquiryId String
+  senderId  String
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  inquiry   Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([inquiryId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  body      String
+  type      String
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model Complaint {
+  id          String          @id @default(uuid())
+  authorId    String
+  targetId    String?
+  subject     String
+  description String
+  status      ComplaintStatus @default(OPEN)
+  resolution  String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  resolvedAt  DateTime?
+  author      User            @relation("ComplaintAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  target      User?           @relation("ComplaintTarget", fields: [targetId], references: [id])
+
+  @@index([status])
+  @@index([authorId])
+}
+
+model AdminApproval {
+  id        String         @id @default(uuid())
+  targetId  String
+  adminId   String?
+  status    ApprovalStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  admin     User?          @relation("ApprovalAdmin", fields: [adminId], references: [id])
+  target    User           @relation("ApprovalTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([targetId])
+}
+
+model FeaturedPricing {
+  id           String        @id @default(uuid())
+  name         String
+  days         Int
+  price        Decimal       @db.Decimal(10, 2)
+  currency     String        @default("BHD")
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+}
+
+model Transaction {
+  id                String            @id @default(uuid())
+  amount            Decimal           @db.Decimal(10, 2)
+  currency          String            @default("BHD")
+  status            TransactionStatus @default(PENDING)
+  type              TransactionType
+  reference         String?
+  metadata          Json?
+  userId            String
+  listingId         String?
+  featuredPricingId String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  packageId         String?
+  subscriptionId    String?           @unique
+  featuredPricing   FeaturedPricing?  @relation(fields: [featuredPricingId], references: [id])
+  listing           Listing?          @relation(fields: [listingId], references: [id])
+  package           Package?          @relation(fields: [packageId], references: [id])
+  subscription      Subscription?     @relation(fields: [subscriptionId], references: [id])
+  user              User              @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([action])
+}
+
+model Story {
+  id        String         @id @default(uuid())
+  userId    String
+  mediaUrl  String
+  mediaType String
+  caption   String?
+  createdAt DateTime       @default(now())
+  expiresAt DateTime
+  views     Int            @default(0)
+  status    ApprovalStatus @default(PENDING)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([status])
+}
+
+model Device {
+  id               String   @id @default(uuid())
+  pushToken        String   @unique
+  platform         String   @default("unknown")
+  language         Language @default(EN)
+  userId           String?
+  isActive         Boolean  @default(true)
+  lastActiveAt     DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  optedInChat      Boolean  @default(true)
+  optedInMarketing Boolean  @default(true)
+  optedInSystem    Boolean  @default(true)
+  user             User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+model Banner {
+  id        String          @id @default(uuid())
+  title     String
+  mediaUrl  String
+  mediaType BannerMediaType @default(IMAGE)
+  link      String?
+  isActive  Boolean         @default(true)
+  sortOrder Int             @default(0)
+  position  BannerPosition  @default(HOME_TOP)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  language  Language        @default(ALL)
+}
 
 enum UserRole {
   SUPER_ADMIN
@@ -86,473 +699,16 @@ enum PackageTarget {
 }
 
 enum SubscriptionStatus {
-  PENDING
   ACTIVE
   EXPIRED
   CANCELLED
-}
-
-// ============================================
-// PACKAGES
-// ============================================
-
-model Package {
-  id             String             @id @default(uuid())
-  nameEn         String
-  nameAr         String
-  nameUr         String?
-  descriptionEn  String?
-  descriptionAr  String?
-  descriptionUr  String?
-  price          Decimal            @db.Decimal(10, 2)
-  billingType    PackageBillingType
-  features       Json // Stores boolean flags and limits
-  targetAudience PackageTarget      @default(ALL)
-  isActive       Boolean            @default(true)
-  sortOrder      Int                @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  subscriptions Subscription[]
-  transactions  Transaction[]
-
-  @@unique([nameEn])
-  @@unique([nameAr])
-  @@index([isActive])
-}
-
-// ============================================
-// SUBSCRIPTIONS
-// ============================================
-
-model Subscription {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  packageId String
-  package   Package @relation(fields: [packageId], references: [id])
-
-  startDate DateTime           @default(now())
-  endDate   DateTime
-  status    SubscriptionStatus @default(ACTIVE)
-
-  // Usage Tracking
-  listingsUsed         Int @default(0)
-  storiesUsed          Int @default(0)
-  featuredListingsUsed Int @default(0)
-
-  // Snapshot of limits at time of purchase
-  limits Json
-
-  transaction Transaction?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([status])
-  @@index([endDate])
-}
-
-// ============================================
-// USER & AUTHENTICATION
-// ============================================
-
-model User {
-  id                String         @id @default(uuid())
-  email             String         @unique
-  password          String
-  role              UserRole
-  name              String?
-  phone             String?
-  whatsapp          String?
-  avatar            String?
-  coverImage        String?
-  pushToken         String? // Expo Push Token
-  preferredLanguage Language       @default(EN)
-  otp               String? // One Time Password for reset
-  otpExpiresAt      DateTime? // Expiry time for OTP
-  isApproved        Boolean        @default(false)
-  status            ApprovalStatus @default(PENDING) // Added to track PENDING/APPROVED/REJECTED state
-  isActive          Boolean        @default(true)
-  commercialRecord  String? // For showrooms, traders
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  deletedAt         DateTime?
-
-  // Relations
-  agency            Agency?
-  showroom          Showroom?
-  listings          Listing[]
-  stories           Story[]
-  complaints        Complaint[]      @relation("ComplaintAuthor")
-  complaintsAbout   Complaint[]      @relation("ComplaintTarget")
-  inquiriesSent     Inquiry[]        @relation("InquirySender")
-  inquiriesReceived Inquiry[]        @relation("InquiryReceiver")
-  approvals         AdminApproval[]  @relation("ApprovalTarget")
-  approvedBy        AdminApproval[]  @relation("ApprovalAdmin")
-  auditLogs         AuditLog[]       @relation("AuditActor")
-  transactions      Transaction[]
-  notifications     Notification[]
-  sentMessages      InquiryMessage[]
-  offers            Offer[]
-  likes             Like[]
-  customsClearers   CustomsClearer[] @relation("CustomsClearerCreatedBy")
-  serviceProvider   ServiceProvider?
-  bookings          Booking[]        @relation("CustomerBookings")
-  serviceRequests   ServiceRequest[] @relation("CustomerServiceRequests")
-  subscriptions     Subscription[]
-  devices           Device[]
-  @@index([email])
-  @@index([role])
-  @@index([isApproved])
-}
-
-// ============================================
-// AGENCY
-// ============================================
-
-model Agency {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  name             String
-  nameAr           String? // Arabic name
-  description      String?
-  descriptionAr    String?
-  commercialRecord String?
-  logo             String?
-  coverImage       String?
-  address          String?
-  city             String?
-  latitude         Float?
-  longitude        Float?
-  website          String?
-
-  isApproved Boolean  @default(false)
-  isVerified Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  subAdmins AgencySubAdmin[]
-  listings  Listing[]
-
-  @@index([isApproved])
-  @@index([city])
-}
-
-model AgencySubAdmin {
-  id       String @id @default(uuid())
-  agencyId String
-  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-
-  email     String
-  name      String
-  password  String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([agencyId, email])
-}
-
-// ============================================
-// SHOWROOM
-// ============================================
-
-model Showroom {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  name             String
-  nameAr           String?
-  description      String?
-  descriptionAr    String?
-  commercialRecord String?
-  logo             String?
-  coverImage       String?
-  address          String?
-  city             String?
-  latitude         Float?
-  longitude        Float?
-
-  isApproved Boolean  @default(false)
-  isVerified Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  subAdmins ShowroomSubAdmin[]
-  listings  Listing[]
-
-  @@index([isApproved])
-  @@index([city])
-}
-
-model ShowroomSubAdmin {
-  id         String   @id @default(uuid())
-  showroomId String
-  showroom   Showroom @relation(fields: [showroomId], references: [id], onDelete: Cascade)
-
-  email     String
-  name      String
-  password  String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([showroomId, email])
-}
-
-// ============================================
-// LISTINGS
-// ============================================
-
-model Listing {
-  id     String        @id @default(uuid())
-  type   ListingType
-  status ListingStatus @default(PENDING)
-
-  // Common fields
-  title         String
-  titleAr       String?
-  description   String?
-  descriptionAr String?
-  price         Decimal @db.Decimal(12, 2)
-  currency      String  @default("BHD")
-
-  // Vehicle specific
-  make         String? // Toyota, BMW, etc.
-  model        String? // Camry, X5, etc.
-  year         Int?
-  mileage      Int? // in kilometers
-  color        String?
-  condition    String? // New, Used, Certified Pre-Owned
-  transmission String? // Automatic, Manual
-  fuelType     String? // Petrol, Diesel, Electric, Hybrid
-  bodyType     String? // Sedan, SUV, Coupe, etc.
-  engineSize   String? // 2.0L, 3.5L, etc.
-
-  // Plate specific
-  plateNumber   String?
-  plateCategory String? // Special, Regular, etc.
-
-  // Location
-  city      String?
-  address   String?
-  latitude  Float?
-  longitude Float?
-
-  // Contact
-  contactPhone    String?
-  contactWhatsapp String?
-  contactEmail    String?
-
-  // Featured
-  isFeatured       Boolean   @default(false)
-  featuredStartsAt DateTime?
-  featuredUntil    DateTime?
-  featuredPrice    Decimal?  @db.Decimal(10, 2)
-  featuredPriority Int       @default(0)
-
-  // Stats
-  viewCount    Int @default(0)
-  likesCount   Int @default(0)
-  inquiryCount Int @default(0)
-
-  // Timestamps
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  approvedAt DateTime?
-  expiresAt  DateTime?
-  deletedAt  DateTime?
-
-  // Relations
-  ownerId String
-  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  agencyId String?
-  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
-
-  showroomId String?
-  showroom   Showroom? @relation(fields: [showroomId], references: [id], onDelete: SetNull)
-
-  media        Media[]
-  inquiries    Inquiry[]
-  transactions Transaction[]
-  offers       Offer[]
-  likes        Like[]
-  views        ListingView[]
-
-  @@index([type])
-  @@index([status])
-  @@index([isFeatured])
-  @@index([make, model])
-  @@index([price])
-  @@index([city])
-  @@index([createdAt])
-  @@index([viewCount])
-  @@index([likesCount])
-}
-
-// ============================================
-// LIKES & VIEWS
-// ============================================
-
-model Like {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  listingId String
-  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([userId, listingId])
-  @@index([userId])
-  @@index([listingId])
-}
-
-model ListingView {
-  id        String   @id @default(uuid())
-  listingId String
-  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  ip        String?
-  userId    String?
-  createdAt DateTime @default(now())
-
-  @@index([listingId])
-  @@index([ip])
-  @@index([userId])
-  @@index([createdAt])
-}
-
-// ============================================
-// OFFERS
-// ============================================
-
-model Offer {
-  id      String      @id @default(uuid())
-  amount  Decimal     @db.Decimal(12, 2)
-  status  OfferStatus @default(PENDING)
-  message String?
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  listingId String
-  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([listingId])
+  PENDING
 }
 
 enum OfferStatus {
   PENDING
   ACCEPTED
   REJECTED
-}
-
-// ============================================
-// INSPECTION CENTERS
-// ============================================
-
-model InspectionCenter {
-  id          String  @id @default(uuid())
-  name        String
-  nameAr      String?
-  description String?
-  address     String?
-  city        String?
-  phone       String?
-  latitude    Float?
-  longitude   Float?
-
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ============================================
-// POLISHING CENTERS
-// ============================================
-
-model PolishingCenter {
-  id          String  @id @default(uuid())
-  name        String
-  nameAr      String?
-  description String?
-  address     String?
-  city        String?
-  phone       String?
-  latitude    Float?
-  longitude   Float?
-
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ============================================
-// SERVICE PROVIDERS (Customs Clearers, Inspection Centers, Polishing Centers)
-// ============================================
-
-model ServiceProvider {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  type        ServiceProviderType
-  name        String?
-  nameAr      String?
-  description String?
-  city        String?
-  address     String?
-  phone       String?
-  whatsapp    String?
-  logo        String?
-  latitude    Float?
-  longitude   Float?
-
-  isApproved Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  services         ServiceItem[]
-  bookings         ServiceRequest[]
-
-  @@index([type])
-  @@index([isApproved])
-  @@index([city])
-}
-
-model ServiceItem {
-  id                String          @id @default(uuid())
-  serviceProviderId String
-  serviceProvider   ServiceProvider @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
-
-  nameEn      String
-  nameAr      String?
-  description String?
-  price       Decimal        @db.Decimal(10, 2)
-  duration    String?
-  isActive    Boolean        @default(true)
-  status      ApprovalStatus @default(PENDING)
-
-  bookings Booking[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([serviceProviderId])
-  @@index([status])
 }
 
 enum BookingStatus {
@@ -567,363 +723,6 @@ enum ServiceRequestStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
-}
-
-model Booking {
-  id              String        @id @default(uuid())
-  serviceItemId   String
-  serviceItem     ServiceItem   @relation(fields: [serviceItemId], references: [id], onDelete: Cascade)
-  customerId      String?
-  customer        User?         @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: SetNull)
-  customerName    String
-  customerPhone   String
-  date            String
-  time            String?
-  notes           String?
-  status          BookingStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([serviceItemId])
-  @@index([customerId])
-}
-
-model ServiceRequest {
-  id                String               @id @default(uuid())
-  serviceProviderId String
-  serviceProvider   ServiceProvider      @relation(fields: [serviceProviderId], references: [id], onDelete: Cascade)
-  customerId        String?
-  customer          User?                @relation("CustomerServiceRequests", fields: [customerId], references: [id], onDelete: SetNull)
-  customerName      String
-  customerPhone     String
-  requestType       String
-  notes             String?
-  status            ServiceRequestStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([serviceProviderId])
-  @@index([customerId])
-}
-
-// ============================================
-// CUSTOMS CLEARERS
-// ============================================
-
-model CustomsClearer {
-  id String @id @default(uuid())
-
-  createdById String
-  createdBy   User   @relation("CustomsClearerCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
-
-  name        String
-  description String?
-
-  phone    String
-  whatsapp String?
-  email    String?
-  city     String?
-  address  String?
-  imageUrl String?
-
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([createdById])
-  @@index([isActive])
-}
-
-// ============================================
-// MEDIA
-// ============================================
-
-model Media {
-  id        String  @id @default(uuid())
-  listingId String
-  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-
-  url       String
-  type      String // image, video
-  isPrimary Boolean @default(false)
-  order     Int     @default(0)
-
-  createdAt DateTime @default(now())
-
-  @@index([listingId])
-}
-
-// ============================================
-// INQUIRIES & CHAT
-// ============================================
-
-model Inquiry {
-  id        String  @id @default(uuid())
-  listingId String
-  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-
-  senderId String
-  sender   User   @relation("InquirySender", fields: [senderId], references: [id], onDelete: Cascade)
-
-  receiverId String
-  receiver   User   @relation("InquiryReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-
-  subject  String?
-  messages InquiryMessage[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([listingId])
-  @@index([senderId])
-  @@index([receiverId])
-}
-
-model InquiryMessage {
-  id        String  @id @default(uuid())
-  inquiryId String
-  inquiry   Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
-
-  senderId String
-  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
-
-  content String
-  isRead  Boolean @default(false)
-
-  createdAt DateTime @default(now())
-
-  @@index([inquiryId])
-}
-
-// ============================================
-// NOTIFICATIONS
-// ============================================
-
-model Notification {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  title  String
-  body   String
-  type   String // SYSTEM, CHAT, LISTING
-  data   Json?
-  isRead Boolean @default(false)
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([isRead])
-}
-
-// ============================================
-// COMPLAINTS
-// ============================================
-
-model Complaint {
-  id String @id @default(uuid())
-
-  authorId String
-  author   User   @relation("ComplaintAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-
-  targetId String?
-  target   User?   @relation("ComplaintTarget", fields: [targetId], references: [id], onDelete: SetNull)
-
-  subject     String
-  description String
-  status      ComplaintStatus @default(OPEN)
-  resolution  String?
-
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  resolvedAt DateTime?
-
-  @@index([status])
-  @@index([authorId])
-}
-
-// ============================================
-// ADMIN APPROVALS
-// ============================================
-
-model AdminApproval {
-  id String @id @default(uuid())
-
-  targetId String
-  target   User   @relation("ApprovalTarget", fields: [targetId], references: [id], onDelete: Cascade)
-
-  adminId String?
-  admin   User?   @relation("ApprovalAdmin", fields: [adminId], references: [id], onDelete: SetNull)
-
-  status ApprovalStatus @default(PENDING)
-  notes  String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([status])
-  @@index([targetId])
-}
-
-// ============================================
-// FEATURED PRICING (Future-ready)
-// ============================================
-
-model FeaturedPricing {
-  id       String  @id @default(uuid())
-  name     String // "7 Days", "14 Days", "30 Days"
-  days     Int
-  price    Decimal @db.Decimal(10, 2)
-  currency String  @default("BHD")
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  transactions Transaction[]
-}
-
-// ============================================
-// TRANSACTIONS
-// ============================================
-
-model Transaction {
-  id        String            @id @default(uuid())
-  amount    Decimal           @db.Decimal(10, 2)
-  currency  String            @default("BHD")
-  status    TransactionStatus @default(PENDING)
-  type      TransactionType
-  reference String? // External payment gateway reference
-  metadata  Json? // Store extra details (e.g. gateway response)
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  listingId String?
-  listing   Listing? @relation(fields: [listingId], references: [id])
-
-  featuredPricingId String?
-  featuredPricing   FeaturedPricing? @relation(fields: [featuredPricingId], references: [id])
-
-  packageId String?
-  package   Package? @relation(fields: [packageId], references: [id])
-
-  subscriptionId String?       @unique
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([status])
-}
-
-// ============================================
-// SYSTEM SETTINGS
-// ============================================
-
-model SystemSetting {
-  id          String  @id @default(uuid())
-  key         String  @unique
-  value       String
-  description String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ============================================
-// AUDIT LOGS
-// ============================================
-
-model AuditLog {
-  id      String  @id @default(uuid())
-  actorId String?
-  actor   User?   @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
-
-  action     String
-  entityType String?
-  entityId   String?
-  metadata   Json?
-
-  ip        String?
-  userAgent String?
-  createdAt DateTime @default(now())
-
-  @@index([createdAt])
-  @@index([actorId])
-  @@index([action])
-}
-
-// ============================================
-// STORIES
-// ============================================
-
-model Story {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  mediaUrl  String
-  mediaType String // IMAGE, VIDEO
-  caption   String?
-  status    ApprovalStatus @default(PENDING) // PENDING, APPROVED, REJECTED
-
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-
-  views Int @default(0)
-
-  @@index([userId])
-  @@index([expiresAt])
-  @@index([status])
-}
-
-// ============================================
-// DEVICES (Push Tokens for Guests & Users)
-// ============================================
-
-model Device {
-  id              String   @id @default(uuid())
-  pushToken       String   @unique
-  platform        String   @default("unknown") // ios, android, web
-  language        Language @default(EN)
-  
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  optedInChat      Boolean @default(true)
-  optedInSystem    Boolean @default(true)
-  optedInMarketing Boolean @default(true)
-
-  isActive        Boolean  @default(true)
-  lastActiveAt    DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([userId])
-  @@index([isActive])
-}
-
-// ============================================
-// BANNERS (ADVERTISEMENTS)
-// ============================================
-
-model Banner {
-  id        String          @id @default(uuid())
-  title     String
-  language  Language        @default(ALL)
-  mediaUrl  String
-  mediaType BannerMediaType @default(IMAGE)
-  link      String? // Optional external link or internal route
-  isActive  Boolean         @default(true)
-  sortOrder Int             @default(0)
-  position  BannerPosition  @default(HOME_TOP)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 enum BannerMediaType {
