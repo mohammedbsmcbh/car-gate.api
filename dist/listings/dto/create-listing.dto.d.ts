@@ -1,0 +1,31 @@
+import { ListingType } from '@prisma/client';
+export declare class CreateListingDto {
+    title: string;
+    description?: string;
+    titleAr?: string;
+    descriptionAr?: string;
+    type: ListingType;
+    price: number;
+    currency?: string;
+    make?: string;
+    model?: string;
+    year?: number;
+    mileage?: number;
+    color?: string;
+    condition?: string;
+    transmission?: string;
+    fuelType?: string;
+    bodyType?: string;
+    engineSize?: string;
+    plateNumber?: string;
+    plateCategory?: string;
+    city?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+    contactPhone?: string;
+    contactWhatsapp?: string;
+    contactEmail?: string;
+    features?: string;
+    images?: string[];
+}

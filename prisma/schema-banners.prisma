@@ -1,0 +1,28 @@
+// ============================================
+// BANNERS (ADVERTISEMENTS)
+// ============================================
+
+model Banner {
+  id          String   @id @default(uuid())
+  title       String
+  mediaUrl    String
+  mediaType   BannerMediaType @default(IMAGE)
+  link        String?  // Optional external link or internal route
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  position    BannerPosition @default(HOME_TOP)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum BannerMediaType {
+  IMAGE
+  VIDEO
+}
+
+enum BannerPosition {
+  HOME_TOP
+  HOME_MIDDLE
+  HOME_BOTTOM
+}

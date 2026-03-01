@@ -1,0 +1,91 @@
+import { PolishingCentersService } from './polishing-centers.service';
+import { CreatePolishingCenterDto } from './dto/create-polishing-center.dto';
+import { UpdatePolishingCenterDto } from './dto/update-polishing-center.dto';
+export declare class PolishingCentersController {
+    private readonly polishingCentersService;
+    constructor(polishingCentersService: PolishingCentersService);
+    findAll(): import("@prisma/client").Prisma.PrismaPromise<{
+        name: string;
+        phone: string | null;
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        nameAr: string | null;
+        description: string | null;
+        city: string | null;
+        address: string | null;
+        latitude: number | null;
+        longitude: number | null;
+    }[]>;
+    findAllAdmin(): import("@prisma/client").Prisma.PrismaPromise<{
+        name: string;
+        phone: string | null;
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        nameAr: string | null;
+        description: string | null;
+        city: string | null;
+        address: string | null;
+        latitude: number | null;
+        longitude: number | null;
+    }[]>;
+    findOne(id: string): Promise<{
+        name: string;
+        phone: string | null;
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        nameAr: string | null;
+        description: string | null;
+        city: string | null;
+        address: string | null;
+        latitude: number | null;
+        longitude: number | null;
+    }>;
+    create(createPolishingCenterDto: CreatePolishingCenterDto): import("@prisma/client").Prisma.Prisma__PolishingCenterClient<{
+        name: string;
+        phone: string | null;
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        nameAr: string | null;
+        description: string | null;
+        city: string | null;
+        address: string | null;
+        latitude: number | null;
+        longitude: number | null;
+    }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
+    update(id: string, updatePolishingCenterDto: UpdatePolishingCenterDto): Promise<{
+        name: string;
+        phone: string | null;
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        nameAr: string | null;
+        description: string | null;
+        city: string | null;
+        address: string | null;
+        latitude: number | null;
+        longitude: number | null;
+    }>;
+    remove(id: string): Promise<{
+        name: string;
+        phone: string | null;
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        nameAr: string | null;
+        description: string | null;
+        city: string | null;
+        address: string | null;
+        latitude: number | null;
+        longitude: number | null;
+    }>;
+}

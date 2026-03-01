@@ -1,0 +1,14 @@
+import { Module, forwardRef } from '@nestjs/common';
+import { NotificationsService } from './notifications.service';
+import { NotificationsController } from './notifications.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+import { ChatModule } from '../chat/chat.module';
+import { DevicesController } from './devices.controller';
+
+@Module({
+  imports: [PrismaModule, forwardRef(() => ChatModule)],
+  controllers: [NotificationsController, DevicesController],
+  providers: [NotificationsService],
+  exports: [NotificationsService],
+})
+export class NotificationsModule {}
